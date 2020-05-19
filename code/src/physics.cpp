@@ -58,6 +58,9 @@ namespace ClothMesh {
 		glm::vec3 **getPositions() {
 			return positions;
 		}
+		glm::vec3 **getInitialPositions() {
+			return initialPositions;
+		}
 		std::vector<Wave> *getWaves() {
 			return waves;
 		}
@@ -113,13 +116,22 @@ void PhysicsInit() {
 
 void PhysicsUpdate(float dt) {
 
-	for (int w = 0; w < myPM->getWaves()->size(); w++) {
-		for (int i = 0; i < ClothMesh::w; i++) {
-			for (int j = 0; j < ClothMesh::h; j++) {
-
+	
+	for (int i = 0; i < ClothMesh::w; i++) {
+		for (int j = 0; j < ClothMesh::h; j++) {
+			glm::vec3 aux = glm::vec3(0, 0, 0);
+			float aux2 = 0;
+			for (int w = 0; w < myPM->getWaves()->size(); w++) {
+				aux += glm::normalize(myPM->getWaves()->at(w).direction) * (float)(myPM->getWaves()->at(w).amplitude 
+					 * glm::sin(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime));
+				aux2 += myPM->getWaves()->at(w).amplitude
+					 * glm::cos(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime);
 			}
+			myPM->getPositions()[i][j] = myPM->getInitialPositions()[i][j] - aux;
+			myPM->getPositions()[i][j].y = myPM->getInitialPositions()[i][j].y + aux2;
 		}
 	}
+
 	
 
 	ClothMesh::totalTime += dt;
