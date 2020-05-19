@@ -122,7 +122,7 @@ void PhysicsUpdate(float dt) {
 			glm::vec3 aux = glm::vec3(0, 0, 0);
 			float aux2 = 0;
 			for (int w = 0; w < myPM->getWaves()->size(); w++) {
-				aux += glm::normalize(myPM->getWaves()->at(w).direction) * (float)(myPM->getWaves()->at(w).amplitude 
+				aux += (glm::normalize(myPM->getWaves()->at(w).direction) / (2 * 3.14159f/ myPM->getWaves()->at(w).lambda)) * (float)(myPM->getWaves()->at(w).amplitude
 					 * glm::sin(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime));
 				aux2 += myPM->getWaves()->at(w).amplitude
 					 * glm::cos(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime);
@@ -156,7 +156,17 @@ void GUI() {
 
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);//FrameRate
-		Exemple_GUI();
+
+		for (int i = 0; i < myPM->getWaves()->size(); i++) {
+			ImGui::Text("Wave %.0f" , (float)(i+1));
+			ImGui::SliderFloat("Amplitude", &myPM->getWaves()->at(i).amplitude, 0, 10);
+			ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(i).lambda, 0, 5);
+			ImGui::SliderFloat("Frequency", &myPM->getWaves()->at(i).frequency, 0, 10);
+		}
+
+		if (ImGui::Button("Add Wave")) {
+		
+		}
 	}
 
 	ImGui::End();
