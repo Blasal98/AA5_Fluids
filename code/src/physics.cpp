@@ -4,6 +4,7 @@
 #include <glm\glm.hpp>
 #include <iostream>
 #include <glm\gtx\intersect.hpp>
+#include <math.h>
 
 //Exemple
 extern void Exemple_GUI();
@@ -15,6 +16,13 @@ bool show_test_window = false;
 
 extern bool renderSphere;
 extern bool renderCloth;
+
+namespace Sphere {
+	extern void setupSphere(glm::vec3 pos = glm::vec3(0.f, 1.f, 0.f), float radius = 1.f);
+	extern void cleanupSphere();
+	extern void updateSphere(glm::vec3 pos, float radius = 1.f);
+	extern void drawSphere();
+}
 
 namespace ClothMesh {
 	extern void setupClothMesh();
@@ -113,6 +121,11 @@ void PhysicsInit() {
 
 
 }
+glm::vec3 spherePos;
+glm::vec3 sphereVel;
+glm::vec3 sphereF;
+float buoyancyForce;
+float mSphere = 1;
 
 void PhysicsUpdate(float dt) {
 
@@ -132,7 +145,15 @@ void PhysicsUpdate(float dt) {
 		}
 	}
 
-	
+	if (renderSphere) {
+		//Sphere::updateSphere()
+		sphereVel = { 0,9.81,0 };
+		float Vs;
+		//            densidad obj                                Vo                   densidad agua
+		Vs = ((mSphere / (4 / 3) * 3.14159f * mSphere) * ((4 / 3) * 3.14159f * mSphere)) / 1000;      //ESTO ESTA MUY MAL PORQUE DEBERIAN TACHARSE
+		buoyancyForce = (1000 * 9.81)*Vs;
+
+	}
 
 	ClothMesh::totalTime += dt;
 
@@ -167,6 +188,8 @@ void GUI() {
 		if (ImGui::Button("Add Wave")) {
 		
 		}
+
+		ImGui::Checkbox("Sphere", &renderSphere);
 	}
 
 	ImGui::End();
