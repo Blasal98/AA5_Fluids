@@ -16,6 +16,13 @@ bool show_test_window = false;
 extern bool renderSphere;
 extern bool renderCloth;
 
+namespace Sphere {
+	extern void setupSphere(glm::vec3 pos = glm::vec3(0.f, 1.f, 0.f), float radius = 1.f);
+	extern void cleanupSphere();
+	extern void updateSphere(glm::vec3 pos, float radius = 1.f);
+	extern void drawSphere();
+}
+
 namespace ClothMesh {
 	extern void setupClothMesh();
 	extern void cleanupClothMesh();
@@ -113,7 +120,8 @@ void PhysicsInit() {
 
 
 }
-
+float a1 = 0.00005;
+float a2 = 0.0000012;
 void PhysicsUpdate(float dt) {
 
 	
@@ -131,7 +139,13 @@ void PhysicsUpdate(float dt) {
 			myPM->getPositions()[i][j].y = myPM->getInitialPositions()[i][j].y + aux2;
 		}
 	}
-
+	if (renderSphere) {
+		glm::vec3 auxito(a1, 1, a2);
+		Sphere::updateSphere(myPM->getPositions()[2][3] + auxito, 1);
+		a1 = a1 * (a1*0.25);
+		a2 = a2 * (a2*0.15);
+		
+	}
 	
 
 	ClothMesh::totalTime += dt;
@@ -167,6 +181,9 @@ void GUI() {
 		if (ImGui::Button("Add Wave")) {
 		
 		}
+
+		ImGui::Checkbox("Sphere", &renderSphere);
+
 	}
 
 	ImGui::End();
