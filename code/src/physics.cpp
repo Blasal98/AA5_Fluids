@@ -109,23 +109,31 @@ namespace ClothMesh {
 }
 ClothMesh::Mesh *myPM;
 
-
+glm::vec3 spherePos;
+glm::vec3 sphereVel;
+glm::vec3 sphereForce;
+glm::vec3 g(0, -9.81f, 0);
+glm::vec3 sphereLastPos;
+glm::vec3 sphereLastVel;
+float buoyancyForce;
+float rSphere = 1.f;
+glm::vec3 auxito;
 
 void PhysicsInit() {
 	//renderSphere = true;
 	renderCloth = true;
-
+	renderSphere = true;
 	myPM = new ClothMesh::Mesh();
 
 	ClothMesh::setupClothMesh();
 
+	auxito = { myPM->getPositions()[3][4].x, 5, myPM->getPositions()[3][4].z };
+	spherePos = auxito;
+	sphereLastPos = auxito;
+	Sphere::updateSphere(spherePos, 1);
+
 
 }
-glm::vec3 spherePos;
-glm::vec3 sphereVel;
-glm::vec3 sphereF;
-float buoyancyForce;
-float mSphere = 1;
 
 void PhysicsUpdate(float dt) {
 
@@ -146,12 +154,39 @@ void PhysicsUpdate(float dt) {
 	}
 
 	if (renderSphere) {
-		//Sphere::updateSphere()
-		sphereVel = { 0,9.81,0 };
+		
+		sphereVel = { 0, 0 ,0 };
+		
 		float Vs;
-		//            densidad obj                                Vo                   densidad agua
-		Vs = ((mSphere / (4 / 3) * 3.14159f * mSphere) * ((4 / 3) * 3.14159f * mSphere)) / 1000;      //ESTO ESTA MUY MAL PORQUE DEBERIAN TACHARSE
-		buoyancyForce = (1000 * 9.81)*Vs;
+		float diff = spherePos.y - myPM->getPositions()[3][4].y;
+		float div = 0.f;
+		if (diff <= 0.2f && diff >= -0.2f) {
+			div = 0.5;
+		}
+		if (diff <= -0.21f) {
+			div = 1.f;
+		}
+		if (diff >= 0.21f) {
+			div = 0.f;
+		}
+
+		Vs = (rSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
+		buoyancyForce = (1000.f * 9.81f)*Vs;
+
+
+		sphereForce = { 0 ,buoyancyForce, 0 };
+		sphereLastPos = spherePos;
+		sphereLastVel = sphereVel;
+		sphereVel = sphereLastVel + dt*(g + sphereForce);
+
+		spherePos = sphereLastPos + sphereVel * dt;
+
+		Sphere::updateSphere(spherePos, 1.f);
+
+
+
+
+		std::cout << spherePos.y << std::endl;
 
 	}
 
