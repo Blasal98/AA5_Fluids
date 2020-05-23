@@ -117,6 +117,7 @@ glm::vec3 sphereLastPos;
 glm::vec3 sphereLastVel;
 float buoyancyForce;
 float rSphere = 1.f;
+float mSphere = 1.f;
 glm::vec3 auxito;
 
 void PhysicsInit() {
@@ -127,9 +128,10 @@ void PhysicsInit() {
 
 	ClothMesh::setupClothMesh();
 
-	auxito = { myPM->getPositions()[3][4].x, 5, myPM->getPositions()[3][4].z };
+	auxito = { myPM->getPositions()[3][4].x, 8, myPM->getPositions()[3][4].z };
 	spherePos = auxito;
 	sphereLastPos = auxito;
+	sphereVel = { 0, 0 ,0 };
 	Sphere::updateSphere(spherePos, 1);
 
 
@@ -155,11 +157,11 @@ void PhysicsUpdate(float dt) {
 
 	if (renderSphere) {
 		
-		sphereVel = { 0, 0 ,0 };
+		
 		
 		float Vs;
-		float diff = spherePos.y - myPM->getPositions()[3][4].y;
-		float div = 0.f;
+		float diff = (spherePos.y-1) - myPM->getPositions()[3][4].y;
+		float div = 0;;
 		if (diff <= 0.2f && diff >= -0.2f) {
 			div = 0.5;
 		}
@@ -170,14 +172,14 @@ void PhysicsUpdate(float dt) {
 			div = 0.f;
 		}
 
-		Vs = (rSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
+		Vs = (mSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
 		buoyancyForce = (1000.f * 9.81f)*Vs;
 
 
 		sphereForce = { 0 ,buoyancyForce, 0 };
 		sphereLastPos = spherePos;
 		sphereLastVel = sphereVel;
-		sphereVel = sphereLastVel + dt*(g + sphereForce);
+		sphereVel = sphereLastVel + dt*((g*mSphere) + sphereForce);
 
 		spherePos = sphereLastPos + sphereVel * dt;
 
