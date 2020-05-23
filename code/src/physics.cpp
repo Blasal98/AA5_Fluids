@@ -161,26 +161,38 @@ void PhysicsUpdate(float dt) {
 		
 		float Vs;
 		float diff = (spherePos.y-1) - myPM->getPositions()[3][4].y;
-		float div = 0;;
-		/*if (diff <= 0.2f && diff >= -0.2f) {
-			div = 0.5;
+		float div = 0;
+		/*if (diff >= -0.15) {
+			diff = 0;
+		}
+		if (diff >= 0.15) {
+
 		}*/
+		
+		if (diff <= 0.2f && diff >= -0.2f) {
+			div = 0.5;
+		}
 		if (diff <= -0.21f) {
 			div = 1.f;
 		}
 		if (diff >= 0.21f) {
 			div = 0.f;
 		}
-
+		
 		//Vs = (mSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
 		Vs = 0.3f*pow(10,-3)*div;
 		buoyancyForce = (1000.f * 9.81f)*Vs;
+		
+		
 
 
 		sphereForce = { 0 ,buoyancyForce, 0 };
 		sphereLastPos = spherePos;
 		sphereLastVel = sphereVel;
 		sphereVel = sphereLastVel + dt*((g*mSphere) + sphereForce);
+		if (div == 1.f) {
+			sphereVel *= 0.81f;
+		}
 
 		spherePos = sphereLastPos + sphereVel * dt;
 
@@ -189,7 +201,7 @@ void PhysicsUpdate(float dt) {
 
 
 
-		std::cout << spherePos.y << std::endl;
+		std::cout << sphereVel.y << " / " << sphereForce.y << std::endl;
 
 	}
 
