@@ -117,7 +117,7 @@ glm::vec3 sphereLastPos;
 glm::vec3 sphereLastVel;
 float buoyancyForce;
 float rSphere = 1.f;
-float mSphere = 1.f;
+float mSphere = 0.2f;
 glm::vec3 auxito;
 
 void PhysicsInit() {
@@ -162,9 +162,9 @@ void PhysicsUpdate(float dt) {
 		float Vs;
 		float diff = (spherePos.y-1) - myPM->getPositions()[3][4].y;
 		float div = 0;;
-		if (diff <= 0.2f && diff >= -0.2f) {
+		/*if (diff <= 0.2f && diff >= -0.2f) {
 			div = 0.5;
-		}
+		}*/
 		if (diff <= -0.21f) {
 			div = 1.f;
 		}
@@ -172,7 +172,8 @@ void PhysicsUpdate(float dt) {
 			div = 0.f;
 		}
 
-		Vs = (mSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
+		//Vs = (mSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
+		Vs = 0.3f*pow(10,-3)*div;
 		buoyancyForce = (1000.f * 9.81f)*Vs;
 
 
