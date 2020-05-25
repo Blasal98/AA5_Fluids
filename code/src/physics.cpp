@@ -23,6 +23,7 @@ namespace ClothMesh {
 	extern void updateClothMesh(float* array_data);
 	extern void drawClothMesh();
 
+	float PI = 3.1415926f;
 
 	int w = 18;
 	int h = 14;
@@ -34,7 +35,10 @@ namespace ClothMesh {
 		float lambda = 2.f; //distancia entre pics
 		float frequency = 2; //pics per segon (s^-1)
 		float period = 1/frequency; //quan tarda a fer un cicle (s)
-		glm::vec3 direction = glm::vec3(1,0,1);
+		glm::vec3 direction = glm::vec3(1,0,0);
+		float artifact = 2 * PI / lambda;
+		bool printSpecsB = false;
+		bool artifactSelfAdjust = false;
 
 		Wave() {}
 		Wave(float a, float l, float f, glm::vec3 dir) {
@@ -43,6 +47,19 @@ namespace ClothMesh {
 			frequency = f;
 			period = 1 / f;
 			direction = dir;
+			artifact = 2 * PI / lambda;
+		}
+
+		void printSpecs(int index) {
+			std::cout << "-w" << index+1 << "-" << std::endl;
+			std::cout << "Total Time: " << totalTime << std::endl;
+			std::cout << "Period: " << period << std::endl;
+			std::cout << "Frequency: " << frequency << std::endl;
+			std::cout << "Amplitude: " << amplitude << std::endl;
+			std::cout << "Lambda: " << lambda << std::endl;
+			std::cout << "Artifact: " << artifact << std::endl;
+			std::cout << "Direction: " << direction.x << " / " << direction.y << " / " << direction.z  << std::endl;
+			std::cout << "----" << std::endl;
 		}
 	};
 
@@ -105,16 +122,7 @@ namespace ClothMesh {
 ClothMesh::Mesh *myPM;
 
 
-void printSpecs() {
-	std::cout << "---" << std::endl;
-	std::cout << "Total Time: " << ClothMesh::totalTime << std::endl;
-	std::cout << "Period: " << myPM->getWaves()->at(0).period << std::endl;
-	std::cout << "Frequency: " << myPM->getWaves()->at(0).frequency << std::endl;
-	std::cout << "Amplitude: " << myPM->getWaves()->at(0).amplitude << std::endl;
-	std::cout << "Lambda: " << myPM->getWaves()->at(0).lambda << std::endl;
-	std::cout << "Check: " << 2 * 3.14159f / myPM->getWaves()->at(0).lambda * myPM->getWaves()->at(0).amplitude << std::endl;
-	std::cout << "---" << std::endl;
-}
+
 
 void PhysicsInit() {
 	//renderSphere = true;
@@ -137,20 +145,21 @@ void PhysicsUpdate(float dt) {
 			
 
 			for (int w = 0; w < myPM->getWaves()->size(); w++) {
-				myPM->getWaves()->at(w).period = 1 / myPM->getWaves()->at(w).frequency;
+				myPM->getWaves()->at(w).period = 1 / myPM->getWaves()->at(w).frequency; //actualitzem periode amb frequencia
+				float auxk = 2 * ClothMesh::PI / myPM->getWaves()->at(w).lambda; //creem k minuscula, magnitud de K majuscula
+				myPM->getWaves()->at(w).direction = glm::normalize(myPM->getWaves()->at(w).direction) * auxk; //actualitzem la magnitud la direccio K amb k minuscula
+				float phase = 2 * ClothMesh::PI * (ClothMesh::totalTime / myPM->getWaves()->at(w).period - (int)ClothMesh::totalTime / myPM->getWaves()->at(w).period); //calculem la fase
+				myPM->getWaves()->at(w).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(w).lambda * myPM->getWaves()->at(w).amplitude; //calculem valor de artfacte
 
-				float auxk = 2 * 3.14159f / myPM->getWaves()->at(w).lambda;
-				float phase = 2 * 3.14159f * (ClothMesh::totalTime / myPM->getWaves()->at(w).period - (int)ClothMesh::totalTime / myPM->getWaves()->at(w).period);
-				myPM->getWaves()->at(w).direction = glm::normalize(myPM->getWaves()->at(w).direction) * auxk;
-
+				//Calculem increment X i Z
 				auxXZ += (glm::normalize(myPM->getWaves()->at(w).direction)) * (float)(myPM->getWaves()->at(w).amplitude
 					 * glm::sin(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime/* + phase*/));
-
+				//Calculem increment Y
 				auxY += myPM->getWaves()->at(w).amplitude
 					 * glm::cos(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime/* + phase*/);
 			}
-			myPM->getPositions()[i][j] = myPM->getInitialPositions()[i][j] - auxXZ;
-			myPM->getPositions()[i][j].y = myPM->getInitialPositions()[i][j].y + auxY;
+			myPM->getPositions()[i][j] = myPM->getInitialPositions()[i][j] - auxXZ; //actualitzem x i Z
+			myPM->getPositions()[i][j].y = myPM->getInitialPositions()[i][j].y + auxY; //actualitzem Y
 		}
 	}
 
@@ -160,7 +169,10 @@ void PhysicsUpdate(float dt) {
 	myPM->setPositions1D();
 	ClothMesh::updateClothMesh(&(myPM->getPositions1D()[0].x));
 
-	printSpecs();
+	for (int w = 0; w < myPM->getWaves()->size(); w++) {
+		if (myPM->getWaves()->at(w).printSpecsB)
+			myPM->getWaves()->at(w).printSpecs(w);
+	}
 }
 
 
@@ -177,17 +189,25 @@ void GUI() {
 
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);//FrameRate
+		if (ImGui::Button("Add Wave")) {
+
+		}
 
 		for (int i = 0; i < myPM->getWaves()->size(); i++) {
 			ImGui::Text("Wave %.0f" , (float)(i+1));
 			ImGui::SliderFloat("Amplitude", &myPM->getWaves()->at(i).amplitude, 0, 10);
-			ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(i).lambda, 0, 20);
+			ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(i).lambda, 0.1f, 20);
 			ImGui::SliderFloat("Frequency", &myPM->getWaves()->at(i).frequency, 0, 10);
+			if (myPM->getWaves()->at(i).artifact >= 0 && myPM->getWaves()->at(i).artifact <= 1)
+				ImGui::Text("SAFE Artifacts");
+			else
+				ImGui::Text("WARNING Artifacts !!!");
+			ImGui::Checkbox("Artifacts Self Adjust", &myPM->getWaves()->at(i).artifactSelfAdjust);
+			ImGui::Checkbox("PrintSpecs", &myPM->getWaves()->at(i).printSpecsB);
 		}
-
-		if (ImGui::Button("Add Wave")) {
 		
-		}
+
+		
 	}
 
 	ImGui::End();
