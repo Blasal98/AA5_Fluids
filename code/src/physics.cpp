@@ -32,8 +32,8 @@ namespace ClothMesh {
 
 	struct Wave {
 		float amplitude = 0.5f; //alçada centre a pic
-		float lambda = 4.f; //distancia entre pics
-		float frequency = 2; //pics per segon (s^-1)
+		float lambda = 10.f; //distancia entre pics
+		float frequency = 0.5f; //pics per segon (s^-1)
 		float period = 1/frequency; //quan tarda a fer un cicle (s)
 		glm::vec3 direction = glm::vec3(1,0,0);
 		float artifact = 2 * PI / lambda;
@@ -50,6 +50,9 @@ namespace ClothMesh {
 			period = 1 / f;
 			direction = dir;
 			artifact = 2 * PI / lambda;
+		}
+		Wave(glm::vec3 dir) {
+			direction = dir;
 		}
 
 		void printSpecs(int index) {
@@ -163,16 +166,16 @@ void PhysicsUpdate(float dt) {
 				myPM->getWaves()->at(w).period = 1 / myPM->getWaves()->at(w).frequency; //actualitzem periode amb frequencia
 				float auxk = 2 * ClothMesh::PI / myPM->getWaves()->at(w).lambda; //creem k minuscula, magnitud de K majuscula
 				myPM->getWaves()->at(w).direction = glm::normalize(myPM->getWaves()->at(w).direction) * auxk; //actualitzem la magnitud la direccio K amb k minuscula
-				float phase = 2 * ClothMesh::PI * (ClothMesh::totalTime / myPM->getWaves()->at(w).period - (int)ClothMesh::totalTime / myPM->getWaves()->at(w).period); //calculem la fase
-				
+				float phase = 2 * ClothMesh::PI * (ClothMesh::totalTime / myPM->getWaves()->at(w).period - (int)(ClothMesh::totalTime / myPM->getWaves()->at(w).period)); //calculem la fase
+				//std::cout << phase << std::endl;
 
 
 				//Calculem increment X i Z
 				auxXZ += (glm::normalize(myPM->getWaves()->at(w).direction)) * (float)(myPM->getWaves()->at(w).amplitude
-					 * glm::sin(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime/* + phase*/));
+					 * glm::sin(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime + phase));
 				//Calculem increment Y
 				auxY += myPM->getWaves()->at(w).amplitude
-					 * glm::cos(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime/* + phase*/);
+					 * glm::cos(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime + phase);
 			}
 			myPM->getPositions()[i][j] = myPM->getInitialPositions()[i][j] - auxXZ; //actualitzem x i Z
 			myPM->getPositions()[i][j].y = myPM->getInitialPositions()[i][j].y + auxY; //actualitzem Y
@@ -206,46 +209,46 @@ void GUI() {
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);//FrameRate
 		if (ImGui::Button("Add Wave")) {
-
+			myPM->getWaves()->push_back(ClothMesh::Wave(glm::vec3(0,0,1)));
 		}
 
-		for (int i = 0; i < myPM->getWaves()->size(); i++) {
-			ImGui::Text("Wave %.0f" , (float)(i+1));
+		//for (int i = 0; i < myPM->getWaves()->size(); i++) {
+			ImGui::Text("---Wave %.0f---" , (float)(1));
 			if (ImGui::Button("Increment X direction")) {
-				myPM->getWaves()->at(i).direction.x += 0.1f;
+				myPM->getWaves()->at(0).direction.x += 0.1f;
 			}
 			if (ImGui::Button("Increment Z direction")) {
-				myPM->getWaves()->at(i).direction.z += 0.1f;
+				myPM->getWaves()->at(0).direction.z += 0.1f;
 			}
-			if (ImGui::SliderFloat("Amplitude", &myPM->getWaves()->at(i).amplitude, 0, 10)) {
-				if (myPM->getWaves()->at(i).artifactSelfAdjust) { //esta selfadjust activat
-					//if (myPM->getWaves()->at(i).artifact > 1) { //crea Warning
-					//	myPM->getWaves()->at(i).lambda = myPM->getWaves()->at(i).amplitude * (2 * ClothMesh::PI) / 0.99f; //ajustem lambda
-					//	myPM->getWaves()->at(i).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(i).lambda * myPM->getWaves()->at(i).amplitude; //calculem valor de artfacte
+			if (ImGui::SliderFloat("Amplitude", &myPM->getWaves()->at(0).amplitude, 0, 10)) {
+				if (myPM->getWaves()->at(0).artifactSelfAdjust) { //esta selfadjust activat
+					//if (myPM->getWaves()->at(0).artifact > 1) { //crea Warning
+					//	myPM->getWaves()->at(0).lambda = myPM->getWaves()->at(0).amplitude * (2 * ClothMesh::PI) / 0.99f; //ajustem lambda
+					//	myPM->getWaves()->at(0).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(0).lambda * myPM->getWaves()->at(0).amplitude; //calculem valor de artfacte
 					//}
-					if (myPM->getWaves()->at(i).artifact > 1)
-						myPM->getWaves()->at(i).adjustLambda = true;
+					if (myPM->getWaves()->at(0).artifact > 1)
+						myPM->getWaves()->at(0).adjustLambda = true;
 				}
 			}
-			if (ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(i).lambda, 1, 60)) {
-				if (myPM->getWaves()->at(i).artifactSelfAdjust) { //esta selfadjust activat
-					//if (myPM->getWaves()->at(i).artifact > 1) { //crea Warning
-					//	myPM->getWaves()->at(i).amplitude = myPM->getWaves()->at(i).lambda / (2 * ClothMesh::PI) * 0.99f; //ajustem aplitud
-					//	myPM->getWaves()->at(i).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(i).lambda * myPM->getWaves()->at(i).amplitude; //calculem valor de artfacte
+			if (ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(0).lambda, 1, 60)) {
+				if (myPM->getWaves()->at(0).artifactSelfAdjust) { //esta selfadjust activat
+					//if (myPM->getWaves()->at(0).artifact > 1) { //crea Warning
+					//	myPM->getWaves()->at(0).amplitude = myPM->getWaves()->at(0).lambda / (2 * ClothMesh::PI) * 0.99f; //ajustem aplitud
+					//	myPM->getWaves()->at(0).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(0).lambda * myPM->getWaves()->at(0).amplitude; //calculem valor de artfacte
 					//}
-					if (myPM->getWaves()->at(i).artifact > 1)
-						myPM->getWaves()->at(i).adjustAmplitude = true;
+					if (myPM->getWaves()->at(0).artifact > 1)
+						myPM->getWaves()->at(0).adjustAmplitude = true;
 				}
 			}
 
-			ImGui::SliderFloat("Frequency", &myPM->getWaves()->at(i).frequency, 0, 10);
-			if (myPM->getWaves()->at(i).artifact >= 0 && myPM->getWaves()->at(i).artifact <= 1)
+			ImGui::SliderFloat("Frequency", &myPM->getWaves()->at(0).frequency, 0, 5);
+			if (myPM->getWaves()->at(0).artifact >= 0 && myPM->getWaves()->at(0).artifact <= 1)
 				ImGui::Text("SAFE Artifacts");
 			else
 				ImGui::Text("WARNING Artifacts !!!");
-			ImGui::Checkbox("Artifacts Self Adjust", &myPM->getWaves()->at(i).artifactSelfAdjust);
-			ImGui::Checkbox("PrintSpecs", &myPM->getWaves()->at(i).printSpecsB);
-		}
+			ImGui::Checkbox("Artifacts Self Adjust", &myPM->getWaves()->at(0).artifactSelfAdjust);
+			ImGui::Checkbox("PrintSpecs", &myPM->getWaves()->at(0).printSpecsB);
+		//}
 		
 
 		
