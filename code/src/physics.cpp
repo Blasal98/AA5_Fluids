@@ -5,6 +5,7 @@
 #include <iostream>
 #include <glm\gtx\intersect.hpp>
 
+
 //Exemple
 extern void Exemple_GUI();
 extern void Exemple_PhysicsInit();
@@ -31,14 +32,16 @@ namespace ClothMesh {
 	struct Wave {
 		float amplitude = 0.5f; //alçada centre a pic
 		float lambda = 2.f; //distancia entre pics
-		float frequency = 2; //pics per segon
-		glm::vec3 direction = glm::vec3(1,0,0);
+		float frequency = 2; //pics per segon (s^-1)
+		float period = 1/frequency; //quan tarda a fer un cicle (s)
+		glm::vec3 direction = glm::vec3(1,0,1);
 
 		Wave() {}
 		Wave(float a, float l, float f, glm::vec3 dir) {
 			amplitude = a;
 			lambda = l;
 			frequency = f;
+			period = 1 / f;
 			direction = dir;
 		}
 	};
@@ -102,6 +105,16 @@ namespace ClothMesh {
 ClothMesh::Mesh *myPM;
 
 
+void printSpecs() {
+	std::cout << "---" << std::endl;
+	std::cout << "Total Time: " << ClothMesh::totalTime << std::endl;
+	std::cout << "Period: " << myPM->getWaves()->at(0).period << std::endl;
+	std::cout << "Frequency: " << myPM->getWaves()->at(0).frequency << std::endl;
+	std::cout << "Amplitude: " << myPM->getWaves()->at(0).amplitude << std::endl;
+	std::cout << "Lambda: " << myPM->getWaves()->at(0).lambda << std::endl;
+	std::cout << "Check: " << 2 * 3.14159f / myPM->getWaves()->at(0).lambda * myPM->getWaves()->at(0).amplitude << std::endl;
+	std::cout << "---" << std::endl;
+}
 
 void PhysicsInit() {
 	//renderSphere = true;
@@ -119,20 +132,27 @@ void PhysicsUpdate(float dt) {
 	
 	for (int i = 0; i < ClothMesh::w; i++) {
 		for (int j = 0; j < ClothMesh::h; j++) {
-			glm::vec3 aux = glm::vec3(0, 0, 0);
-			float aux2 = 0;
+			glm::vec3 auxXZ = glm::vec3(0, 0, 0);
+			float auxY = 0;
+			
+
 			for (int w = 0; w < myPM->getWaves()->size(); w++) {
-				aux += (glm::normalize(myPM->getWaves()->at(w).direction) / (2 * 3.14159f/ myPM->getWaves()->at(w).lambda)) * (float)(myPM->getWaves()->at(w).amplitude
-					 * glm::sin(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime));
-				aux2 += myPM->getWaves()->at(w).amplitude
-					 * glm::cos(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime);
+				myPM->getWaves()->at(w).period = 1 / myPM->getWaves()->at(w).frequency;
+
+				float auxk = 2 * 3.14159f / myPM->getWaves()->at(w).lambda;
+				float phase = 2 * 3.14159f * (ClothMesh::totalTime / myPM->getWaves()->at(w).period - (int)ClothMesh::totalTime / myPM->getWaves()->at(w).period);
+				myPM->getWaves()->at(w).direction = glm::normalize(myPM->getWaves()->at(w).direction) * auxk;
+
+				auxXZ += (glm::normalize(myPM->getWaves()->at(w).direction)) * (float)(myPM->getWaves()->at(w).amplitude
+					 * glm::sin(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime/* + phase*/));
+
+				auxY += myPM->getWaves()->at(w).amplitude
+					 * glm::cos(glm::dot(myPM->getWaves()->at(w).direction, myPM->getInitialPositions()[i][j]) - myPM->getWaves()->at(w).frequency * ClothMesh::totalTime/* + phase*/);
 			}
-			myPM->getPositions()[i][j] = myPM->getInitialPositions()[i][j] - aux;
-			myPM->getPositions()[i][j].y = myPM->getInitialPositions()[i][j].y + aux2;
+			myPM->getPositions()[i][j] = myPM->getInitialPositions()[i][j] - auxXZ;
+			myPM->getPositions()[i][j].y = myPM->getInitialPositions()[i][j].y + auxY;
 		}
 	}
-
-	
 
 	ClothMesh::totalTime += dt;
 
@@ -140,8 +160,9 @@ void PhysicsUpdate(float dt) {
 	myPM->setPositions1D();
 	ClothMesh::updateClothMesh(&(myPM->getPositions1D()[0].x));
 
-
+	printSpecs();
 }
+
 
 void PhysicsCleanup() {
 
@@ -160,7 +181,7 @@ void GUI() {
 		for (int i = 0; i < myPM->getWaves()->size(); i++) {
 			ImGui::Text("Wave %.0f" , (float)(i+1));
 			ImGui::SliderFloat("Amplitude", &myPM->getWaves()->at(i).amplitude, 0, 10);
-			ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(i).lambda, 0, 5);
+			ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(i).lambda, 0, 20);
 			ImGui::SliderFloat("Frequency", &myPM->getWaves()->at(i).frequency, 0, 10);
 		}
 
