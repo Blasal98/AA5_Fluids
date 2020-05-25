@@ -4,7 +4,7 @@
 #include <glm\glm.hpp>
 #include <iostream>
 #include <glm\gtx\intersect.hpp>
-
+#include <time.h>
 
 //Exemple
 extern void Exemple_GUI();
@@ -24,25 +24,41 @@ namespace ClothMesh {
 	extern void drawClothMesh();
 
 	float PI = 3.1415926f;
+	float timeToRestart = 15;
 
 	int w = 18;
 	int h = 14;
 	float initialSpaceBetweenPoints = 0.5f;
 	double totalTime;
 
+	float defaultAmplitude = 0.5f;
+	float defaultLambda = 10.f;
+	float defaultFrequency = 0.5f;
+
+	float generalAmplitude = defaultAmplitude;
+	float generalLambda = defaultLambda;
+	float generalFrequency = defaultFrequency;
+
 	struct Wave {
-		float amplitude = 0.5f; //alçada centre a pic
-		float lambda = 10.f; //distancia entre pics
-		float frequency = 0.5f; //pics per segon (s^-1)
-		float period = 1/frequency; //quan tarda a fer un cicle (s)
-		glm::vec3 direction = glm::vec3(1,0,0);
-		float artifact = 2 * PI / lambda;
+		float amplitude; //alçada centre a pic
+		float lambda; //distancia entre pics
+		float frequency; //pics per segon (s^-1)
+		float period; //quan tarda a fer un cicle (s)
+		glm::vec3 direction;
+		float artifact;
 		bool printSpecsB = false;
 		bool artifactSelfAdjust = false;
 		bool adjustLambda = false;
 		bool adjustAmplitude = false;
 
-		Wave() {}
+		Wave() {
+			direction = glm::vec3(1,0,0);
+			amplitude = defaultAmplitude;
+			lambda = defaultLambda;
+			frequency = defaultFrequency;
+			period = 1 / frequency;
+			artifact = 2 * PI / lambda;
+		}
 		Wave(float a, float l, float f, glm::vec3 dir) {
 			amplitude = a;
 			lambda = l;
@@ -53,6 +69,11 @@ namespace ClothMesh {
 		}
 		Wave(glm::vec3 dir) {
 			direction = dir;
+			amplitude = defaultAmplitude;
+			lambda = defaultLambda;
+			frequency = defaultFrequency;
+			period = 1 / frequency;
+			artifact = 2 * PI / lambda;
 		}
 
 		void printSpecs(int index) {
@@ -67,7 +88,7 @@ namespace ClothMesh {
 			std::cout << "----" << std::endl;
 		}
 	};
-
+	
 	class Mesh {
 	private:
 		
@@ -109,6 +130,9 @@ namespace ClothMesh {
 			}
 			waves->push_back(Wave());
 			totalTime = 0;
+			generalAmplitude = defaultAmplitude;
+			generalLambda = defaultLambda;
+			generalFrequency = defaultFrequency;
 		}
 
 		Mesh() {
@@ -123,6 +147,8 @@ namespace ClothMesh {
 			reset();
 		}
 	};
+
+
 }
 ClothMesh::Mesh *myPM;
 
@@ -137,6 +163,7 @@ void PhysicsInit() {
 
 	ClothMesh::setupClothMesh();
 
+	srand(time(NULL));
 
 }
 
@@ -150,7 +177,7 @@ void PhysicsUpdate(float dt) {
 			
 
 			for (int w = 0; w < myPM->getWaves()->size(); w++) {
-
+				
 				if (myPM->getWaves()->at(w).adjustLambda) {
 					myPM->getWaves()->at(w).lambda = myPM->getWaves()->at(w).amplitude * (2 * ClothMesh::PI) / 0.99f; //ajustem amplitud
 					myPM->getWaves()->at(w).adjustLambda = false;
@@ -192,6 +219,10 @@ void PhysicsUpdate(float dt) {
 		if (myPM->getWaves()->at(w).printSpecsB)
 			myPM->getWaves()->at(w).printSpecs(w);
 	}
+	if (ClothMesh::totalTime >= ClothMesh::timeToRestart) {
+		myPM->reset();
+	}
+
 }
 
 
@@ -208,12 +239,18 @@ void GUI() {
 
 	{
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);//FrameRate
-		if (ImGui::Button("Add Wave")) {
-			myPM->getWaves()->push_back(ClothMesh::Wave(glm::vec3(0,0,1)));
+		if (ImGui::Button("Add Random Wave")) {
+			myPM->getWaves()->push_back(ClothMesh::Wave(glm::vec3((float)std::rand() / RAND_MAX, (float)std::rand() / RAND_MAX, (float)std::rand() / RAND_MAX)));
 		}
-
+		ImGui::Text("Number of waves: %.0f", (float)(myPM->getWaves()->size()));
 		//for (int i = 0; i < myPM->getWaves()->size(); i++) {
-			ImGui::Text("---Wave %.0f---" , (float)(1));
+			//ImGui::Text("---Wave %.0f---" , (float)(1));
+		if (ImGui::Button("ResetWaves")) {
+			myPM->reset();
+		}
+		ImGui::Text("Reseting in: %.3f", ClothMesh::timeToRestart - ClothMesh::totalTime);
+
+		ImGui::Text("-----Edit First Wave: ");
 			if (ImGui::Button("Increment X direction")) {
 				myPM->getWaves()->at(0).direction.x += 0.1f;
 			}
@@ -249,9 +286,17 @@ void GUI() {
 			ImGui::Checkbox("Artifacts Self Adjust", &myPM->getWaves()->at(0).artifactSelfAdjust);
 			ImGui::Checkbox("PrintSpecs", &myPM->getWaves()->at(0).printSpecsB);
 		//}
+			ImGui::Text("-----Edit All Waves: ");
+		if (ImGui::SliderFloat("General Amplitude", &ClothMesh::generalAmplitude, 0, 10) ||
+			ImGui::SliderFloat("General Lambda", &ClothMesh::generalLambda, 1, 60) ||
+			ImGui::SliderFloat("General Frequency", &ClothMesh::generalFrequency, 0, 5)) {
 		
-
-		
+			for (int i = 0; i < myPM->getWaves()->size(); i++) {
+				myPM->getWaves()->at(i).amplitude = ClothMesh::generalAmplitude;
+				myPM->getWaves()->at(i).lambda = ClothMesh::generalLambda;
+				myPM->getWaves()->at(i).frequency = ClothMesh::generalFrequency;
+			}
+		}
 	}
 
 	ImGui::End();
