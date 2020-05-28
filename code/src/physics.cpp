@@ -17,6 +17,28 @@ bool show_test_window = false;
 extern bool renderSphere;
 extern bool renderCloth;
 
+namespace Sphere {
+	extern void setupSphere(glm::vec3 pos = glm::vec3(0.f, 1.f, 0.f), float radius = 1.f);
+	extern void cleanupSphere();
+	extern void updateSphere(glm::vec3 pos, float radius = 1.f);
+	extern void drawSphere();
+}
+
+glm::vec3 spherePos;
+glm::vec3 sphereVel;
+glm::vec3 sphereForce;
+glm::vec3 g(0, -9.81f, 0);
+glm::vec3 sphereLastPos;
+glm::vec3 sphereLastVel;
+float buoyancyForce;
+float rSphere = 1.f;
+float mSphere = 0.2f;
+glm::vec3 auxito;
+int myX;
+int myY;
+
+
+
 namespace ClothMesh {
 	extern void setupClothMesh();
 	extern void cleanupClothMesh();
@@ -136,6 +158,9 @@ namespace ClothMesh {
 			generalAmplitude = defaultAmplitude;
 			generalLambda = defaultLambda;
 			generalFrequency = defaultFrequency;
+
+
+
 		}
 
 		Mesh() {
@@ -155,18 +180,27 @@ namespace ClothMesh {
 }
 ClothMesh::Mesh *myPM;
 
-
+void SphereReset() {
+	myX = rand() % ClothMesh::w;
+	myY = rand() % ClothMesh::h;
+	auxito = { myPM->getPositions()[myX][myY].x, 8, myPM->getPositions()[myX][myY].z };
+	spherePos = auxito;
+	sphereLastPos = auxito;
+	sphereVel = { 0, 0 ,0 };
+	Sphere::updateSphere(spherePos, 1);
+}
 
 
 void PhysicsInit() {
-	//renderSphere = true;
+	srand(time(NULL));
+
+	renderSphere = true;
 	renderCloth = true;
 
 	myPM = new ClothMesh::Mesh();
+	SphereReset();
 
 	ClothMesh::setupClothMesh();
-
-	srand(time(NULL));
 
 }
 
@@ -210,6 +244,45 @@ void PhysicsUpdate(float dt) {
 			myPM->getPositions()[i][j] = myPM->getInitialPositions()[i][j] - auxXZ; //actualitzem x i Z
 			myPM->getPositions()[i][j].y = myPM->getInitialPositions()[i][j].y + auxY; //actualitzem Y
 		}
+	}
+	if (renderSphere) {
+
+
+		float Vs;
+		float diff = (spherePos.y - 1) - myPM->getPositions()[myX][myY].y;
+		float div = 0;
+
+
+		if (diff <= 0.2f && diff >= -0.2f) {
+			div = 0.5;
+		}
+		if (diff <= -0.21f) {
+			div = 1.f;
+		}
+		if (diff >= 0.21f) {
+			div = 0.f;
+		}
+
+		Vs = (mSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
+		//Vs = 0.3f*pow(10,-3)*div;
+		buoyancyForce = (6.f * 9.81f)*Vs;
+
+
+
+
+		sphereForce = { 0 ,buoyancyForce, 0 };
+		sphereLastPos = spherePos;
+		sphereLastVel = sphereVel;
+		sphereVel = sphereLastVel + dt * ((g*mSphere) + sphereForce);
+		if (div == 1.f) {
+			sphereVel *= 0.81f;
+		}
+
+		spherePos = sphereLastPos + sphereVel * dt;
+
+		Sphere::updateSphere(spherePos, 1.f);
+		//std::cout << sphereVel.y << " / " << sphereForce.y << std::endl;
+
 	}
 
 	ClothMesh::totalTime += dt;
@@ -256,6 +329,9 @@ void GUI() {
 		ImGui::Checkbox("Auto Reset", &ClothMesh::autoReset);
 		if(ClothMesh::autoReset)
 			ImGui::Text("Reseting in: %.3f", ClothMesh::timeToRestart - ClothMesh::totalTime);
+		if (ImGui::Button("Reset Sphere")) {
+			SphereReset();
+		}
 
 		ImGui::Text("-------------- Edit First Wave --------------");
 		if (ImGui::Button("Increment X direction")) {
