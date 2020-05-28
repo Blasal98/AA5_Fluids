@@ -25,6 +25,7 @@ namespace ClothMesh {
 
 	float PI = 3.1415926f;
 	float timeToRestart = 15;
+	bool autoReset = true;
 
 	int w = 18;
 	int h = 14;
@@ -38,6 +39,8 @@ namespace ClothMesh {
 	float generalAmplitude = defaultAmplitude;
 	float generalLambda = defaultLambda;
 	float generalFrequency = defaultFrequency;
+
+
 
 	struct Wave {
 		float amplitude; //alçada centre a pic
@@ -220,7 +223,8 @@ void PhysicsUpdate(float dt) {
 			myPM->getWaves()->at(w).printSpecs(w);
 	}
 	if (ClothMesh::totalTime >= ClothMesh::timeToRestart) {
-		myPM->reset();
+		if(ClothMesh::autoReset)
+			myPM->reset();
 	}
 
 }
@@ -238,6 +242,7 @@ void GUI() {
 	ImGui::Begin("Physics Parameters", &show, 0);
 
 	{
+		ImGui::Text("AA5 - Francesc Aguiló i Víctor Blas");
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);//FrameRate
 		if (ImGui::Button("Add Random Wave")) {
 			myPM->getWaves()->push_back(ClothMesh::Wave(glm::vec3((float)std::rand() / RAND_MAX, (float)std::rand() / RAND_MAX, (float)std::rand() / RAND_MAX)));
@@ -248,45 +253,49 @@ void GUI() {
 		if (ImGui::Button("ResetWaves")) {
 			myPM->reset();
 		}
-		ImGui::Text("Reseting in: %.3f", ClothMesh::timeToRestart - ClothMesh::totalTime);
+		ImGui::Checkbox("Auto Reset", &ClothMesh::autoReset);
+		if(ClothMesh::autoReset)
+			ImGui::Text("Reseting in: %.3f", ClothMesh::timeToRestart - ClothMesh::totalTime);
 
-		ImGui::Text("-----Edit First Wave: ");
-			if (ImGui::Button("Increment X direction")) {
-				myPM->getWaves()->at(0).direction.x += 0.1f;
+		ImGui::Text("-------------- Edit First Wave --------------");
+		if (ImGui::Button("Increment X direction")) {
+			myPM->getWaves()->at(0).direction.x += 0.1f;
+		}
+		if (ImGui::Button("Increment Z direction")) {
+			myPM->getWaves()->at(0).direction.z += 0.1f;
+		}
+		if (ImGui::SliderFloat("Amplitude", &myPM->getWaves()->at(0).amplitude, 0, 10)) {
+			if (myPM->getWaves()->at(0).artifactSelfAdjust) { //esta selfadjust activat
+				//if (myPM->getWaves()->at(0).artifact > 1) { //crea Warning
+				//	myPM->getWaves()->at(0).lambda = myPM->getWaves()->at(0).amplitude * (2 * ClothMesh::PI) / 0.99f; //ajustem lambda
+				//	myPM->getWaves()->at(0).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(0).lambda * myPM->getWaves()->at(0).amplitude; //calculem valor de artfacte
+				//}
+				if (myPM->getWaves()->at(0).artifact > 1)
+					myPM->getWaves()->at(0).adjustLambda = true;
 			}
-			if (ImGui::Button("Increment Z direction")) {
-				myPM->getWaves()->at(0).direction.z += 0.1f;
+		}
+		if (ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(0).lambda, 1, 60)) {
+			if (myPM->getWaves()->at(0).artifactSelfAdjust) { //esta selfadjust activat
+				//if (myPM->getWaves()->at(0).artifact > 1) { //crea Warning
+				//	myPM->getWaves()->at(0).amplitude = myPM->getWaves()->at(0).lambda / (2 * ClothMesh::PI) * 0.99f; //ajustem aplitud
+				//	myPM->getWaves()->at(0).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(0).lambda * myPM->getWaves()->at(0).amplitude; //calculem valor de artfacte
+				//}
+				if (myPM->getWaves()->at(0).artifact > 1)
+					myPM->getWaves()->at(0).adjustAmplitude = true;
 			}
-			if (ImGui::SliderFloat("Amplitude", &myPM->getWaves()->at(0).amplitude, 0, 10)) {
-				if (myPM->getWaves()->at(0).artifactSelfAdjust) { //esta selfadjust activat
-					//if (myPM->getWaves()->at(0).artifact > 1) { //crea Warning
-					//	myPM->getWaves()->at(0).lambda = myPM->getWaves()->at(0).amplitude * (2 * ClothMesh::PI) / 0.99f; //ajustem lambda
-					//	myPM->getWaves()->at(0).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(0).lambda * myPM->getWaves()->at(0).amplitude; //calculem valor de artfacte
-					//}
-					if (myPM->getWaves()->at(0).artifact > 1)
-						myPM->getWaves()->at(0).adjustLambda = true;
-				}
-			}
-			if (ImGui::SliderFloat("Lambda", &myPM->getWaves()->at(0).lambda, 1, 60)) {
-				if (myPM->getWaves()->at(0).artifactSelfAdjust) { //esta selfadjust activat
-					//if (myPM->getWaves()->at(0).artifact > 1) { //crea Warning
-					//	myPM->getWaves()->at(0).amplitude = myPM->getWaves()->at(0).lambda / (2 * ClothMesh::PI) * 0.99f; //ajustem aplitud
-					//	myPM->getWaves()->at(0).artifact = 2 * ClothMesh::PI / myPM->getWaves()->at(0).lambda * myPM->getWaves()->at(0).amplitude; //calculem valor de artfacte
-					//}
-					if (myPM->getWaves()->at(0).artifact > 1)
-						myPM->getWaves()->at(0).adjustAmplitude = true;
-				}
-			}
+		}
 
-			ImGui::SliderFloat("Frequency", &myPM->getWaves()->at(0).frequency, 0, 5);
-			if (myPM->getWaves()->at(0).artifact >= 0 && myPM->getWaves()->at(0).artifact <= 1)
-				ImGui::Text("SAFE Artifacts");
-			else
-				ImGui::Text("WARNING Artifacts !!!");
-			ImGui::Checkbox("Artifacts Self Adjust", &myPM->getWaves()->at(0).artifactSelfAdjust);
-			ImGui::Checkbox("PrintSpecs", &myPM->getWaves()->at(0).printSpecsB);
-		//}
-			ImGui::Text("-----Edit All Waves: ");
+		ImGui::SliderFloat("Frequency", &myPM->getWaves()->at(0).frequency, 0, 5);
+		ImGui::Text("Hi ha l'error d'Artifacts: ");
+		if (myPM->getWaves()->at(0).artifact >= 0 && myPM->getWaves()->at(0).artifact <= 1)
+			ImGui::Text("NO");
+		else
+			ImGui::Text("SI!!!");
+
+		ImGui::Checkbox("Artifacts Self Adjust", &myPM->getWaves()->at(0).artifactSelfAdjust);
+		ImGui::Checkbox("PrintSpecs", &myPM->getWaves()->at(0).printSpecsB);
+
+		ImGui::Text("-------------- Edit All Waves --------------");
 		if (ImGui::SliderFloat("General Amplitude", &ClothMesh::generalAmplitude, 0, 10) ||
 			ImGui::SliderFloat("General Lambda", &ClothMesh::generalLambda, 1, 60) ||
 			ImGui::SliderFloat("General Frequency", &ClothMesh::generalFrequency, 0, 5)) {
