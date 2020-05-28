@@ -5,6 +5,8 @@
 #include <iostream>
 #include <glm\gtx\intersect.hpp>
 #include <math.h>
+#include <stdlib.h>
+#include <time.h>
 
 //Exemple
 extern void Exemple_GUI();
@@ -16,6 +18,19 @@ bool show_test_window = false;
 
 extern bool renderSphere;
 extern bool renderCloth;
+
+glm::vec3 spherePos;
+glm::vec3 sphereVel;
+glm::vec3 sphereForce;
+glm::vec3 g(0, -9.81f, 0);
+glm::vec3 sphereLastPos;
+glm::vec3 sphereLastVel;
+float buoyancyForce;
+float rSphere = 1.f;
+float mSphere = 0.2f;
+glm::vec3 auxito;
+int myX;
+int myY;
 
 namespace Sphere {
 	extern void setupSphere(glm::vec3 pos = glm::vec3(0.f, 1.f, 0.f), float radius = 1.f);
@@ -109,26 +124,19 @@ namespace ClothMesh {
 }
 ClothMesh::Mesh *myPM;
 
-glm::vec3 spherePos;
-glm::vec3 sphereVel;
-glm::vec3 sphereForce;
-glm::vec3 g(0, -9.81f, 0);
-glm::vec3 sphereLastPos;
-glm::vec3 sphereLastVel;
-float buoyancyForce;
-float rSphere = 1.f;
-float mSphere = 0.2f;
-glm::vec3 auxito;
+
 
 void PhysicsInit() {
+	srand(time(NULL));
 	//renderSphere = true;
 	renderCloth = true;
 	renderSphere = true;
 	myPM = new ClothMesh::Mesh();
-
+	myX = rand() % ClothMesh::w;
+	myY = rand() % ClothMesh::h;
 	ClothMesh::setupClothMesh();
 
-	auxito = { myPM->getPositions()[3][4].x, 8, myPM->getPositions()[3][4].z };
+	auxito = { myPM->getPositions()[myX][myY].x, 8, myPM->getPositions()[myX][myY].z };
 	spherePos = auxito;
 	sphereLastPos = auxito;
 	sphereVel = { 0, 0 ,0 };
@@ -158,16 +166,10 @@ void PhysicsUpdate(float dt) {
 	if (renderSphere) {
 		
 		
-		
 		float Vs;
-		float diff = (spherePos.y-1) - myPM->getPositions()[3][4].y;
+		float diff = (spherePos.y-1) - myPM->getPositions()[myX][myY].y;
 		float div = 0;
-		/*if (diff >= -0.15) {
-			diff = 0;
-		}
-		if (diff >= 0.15) {
-
-		}*/
+	
 		
 		if (diff <= 0.2f && diff >= -0.2f) {
 			div = 0.5;
@@ -237,6 +239,10 @@ void GUI() {
 
 		if (ImGui::Button("Add Wave")) {
 		
+		}
+
+		if (ImGui::Button("Restart")) {
+			PhysicsInit();
 		}
 
 		ImGui::Checkbox("Sphere", &renderSphere);
