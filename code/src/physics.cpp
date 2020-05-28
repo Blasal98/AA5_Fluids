@@ -181,9 +181,9 @@ void PhysicsUpdate(float dt) {
 			div = 0.f;
 		}
 		
-		//Vs = (mSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
-		Vs = 0.3f*pow(10,-3)*div;
-		buoyancyForce = (1000.f * 9.81f)*Vs;
+		Vs = (mSphere / ((4.f / 3.f) * 3.14159f * rSphere))*div;
+		//Vs = 0.3f*pow(10,-3)*div;
+		buoyancyForce = (6.f * 9.81f)*Vs;
 		
 		
 
