@@ -32,7 +32,7 @@ glm::vec3 sphereLastPos;
 glm::vec3 sphereLastVel;
 float buoyancyForce;
 float rSphere = 1.f;
-float mSphere = 4150.f;
+float mSphere = 4190.f;
 glm::vec3 auxito;
 int myX;
 int myY;
@@ -191,7 +191,7 @@ void SphereReset() {
 	sphereVel = { 0, 0 ,0 };
 	Sphere::updateSphere(spherePos, 1);
 	liquidDensity = 1000.f;
-	mSphere = 4150.f;
+	mSphere = 4187.f;
 }
 
 
@@ -267,22 +267,21 @@ void PhysicsUpdate(float dt) {
 			div = 0.f;
 		}
 
-		Vs = (1.f / ((4.f / 3.f) * 3.14159f * rSphere))*div;
-		//Vs = 0.3f*pow(10,-3)*div;
-		sphereDensity = mSphere / ((4.f / 3.f) * 3.14159f * rSphere);
-		buoyancyForce = ((liquidDensity - sphereDensity) * 9.81f)*Vs;
+		Vs = (((4.f / 3.f) * 3.14159f * glm::pow(rSphere,3.f)))*div;
+		sphereDensity = mSphere / ((4.f / 3.f) * 3.14159f * glm::pow(rSphere, 3.f));
+		buoyancyForce = (liquidDensity - sphereDensity) * 9.81f * Vs;
 
 		sphereForce = { 0 ,buoyancyForce, 0 };
 		sphereLastPos = spherePos;
 		sphereLastVel = sphereVel;
-		sphereVel = sphereLastVel + dt * ((g) + sphereForce);
-		if (div == 1.f) {
+		sphereVel = sphereLastVel + dt * (g + sphereForce);
+		/*if (div == 1.f) {
 			sphereVel *= 0.81f;
-		}
+		}*/
 
 		spherePos = sphereLastPos + sphereVel * dt;
 
-		Sphere::updateSphere(spherePos, 1.f);
+		Sphere::updateSphere(spherePos, rSphere);
 		//std::cout << sphereVel.y << " / " << sphereForce.y << std::endl;
 
 	}
@@ -317,7 +316,7 @@ void GUI() {
 	ImGui::Begin("Physics Parameters", &show, 0);
 
 	{
-		ImGui::Text("AA5 - Francesc Aguiló i Víctor Blas");
+		ImGui::Text("AA5 - Francesc Aguilo i Victor Blas");
 		ImGui::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / ImGui::GetIO().Framerate, ImGui::GetIO().Framerate);//FrameRate
 		if (ImGui::Button("Add Random Wave")) {
 			myPM->getWaves()->push_back(ClothMesh::Wave(glm::vec3((float)std::rand() / RAND_MAX, (float)std::rand() / RAND_MAX, (float)std::rand() / RAND_MAX)));
@@ -334,9 +333,11 @@ void GUI() {
 		if (ImGui::Button("Reset Sphere")) {
 			SphereReset();
 		}
-		ImGui::SliderFloat("Sphere Mass", &mSphere, 4000.f,4500.f);
-		ImGui::SliderFloat("Liquid Density", &liquidDensity, 1.f,2000.f);
+		ImGui::SliderFloat("Sphere Mass", &mSphere, 4185.f,4190.f);
+		//ImGui::SliderFloat("Liquid Density", &liquidDensity, 1.f,2000.f);
 		ImGui::Text("Liquid - Sphere Density = %.3f", liquidDensity - sphereDensity);
+		ImGui::Text("Buoyancy Force = %.3f", buoyancyForce);
+		ImGui::Text("Total Force on Sphere = %.3f", buoyancyForce + g.y);
 
 		ImGui::Text("-------------- Edit First Wave --------------");
 		if (ImGui::Button("Increment X direction")) {
